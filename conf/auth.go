@@ -11,18 +11,19 @@ import (
 )
 
 var (
-	sshUsername = "foo"
-	sshPassword = "bar"
-	username    = "username"
-	password    = "password"
-	host        = "remote"
+	sshUsername = "foo"      // ssh jumper username
+	sshPassword = "bar"      // ssh jumper password
+	username    = "username" // ssh slave username
+	password    = "password" // ssh slave password
+	host        = "host"     // ssh slave host
 )
 
 const (
-	PrivateKeyPath = "key_path"
+	ServerAddr     = "127.0.0.1:2200"   // ssh jumper host
+	PrivateKeyPath = "private_key_path" // ssh jumper private key
 )
 
-// ConnectSSHPassword 连接当前ssh
+// ConnectSSHPassword authorization to ssh jumper
 func ConnectSSHPassword(c ssh.ConnMetadata, pass []byte) (*ssh.Permissions, error) {
 	if c.User() == sshUsername && string(pass) == sshPassword {
 		return nil, nil
@@ -30,7 +31,7 @@ func ConnectSSHPassword(c ssh.ConnMetadata, pass []byte) (*ssh.Permissions, erro
 	return nil, fmt.Errorf("password rejected for %q", c.User())
 }
 
-// ConnectSSHPublicKey 连接当前ssh
+// ConnectSSHPublicKey authorization to ssh jumper
 func ConnectSSHPublicKey(c ssh.ConnMetadata, pubKey ssh.PublicKey) (*ssh.Permissions, error) {
 	authorizedKeysMap := map[string]bool{}
 	if authorizedKeysMap[string(pubKey.Marshal())] {
@@ -43,7 +44,7 @@ func ConnectSSHPublicKey(c ssh.ConnMetadata, pubKey ssh.PublicKey) (*ssh.Permiss
 	return nil, fmt.Errorf("unknown public key for %q", c.User())
 }
 
-// GetRemoteSSH 获取远端ssh信息
+// GetRemoteSSH authorization to ssh jumper slave
 func GetRemoteSSH(command utils.Command, serverConn *ssh.ServerConn) (string, *ssh.ClientConfig, error) {
 	// do something...
 	sshConfig := &ssh.ClientConfig{

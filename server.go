@@ -13,7 +13,7 @@ import (
 )
 
 func main() {
-	Listen("localhost:2500")
+	Listen(conf.ServerAddr)
 }
 
 func Listen(addr string) {

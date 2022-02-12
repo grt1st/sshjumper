@@ -5,12 +5,12 @@ SSH Jumper 是一个提供SSH跳转功能的服务，具备身份认证、操作
 SSH Jumper is a jump server for SSH, which has function of authentication and command logged. 
 
 > [中文版本 README](https://github.com/grt1st/sshjumper/blob/master/README.md)
-> 
+>
 > [English Version README](https://github.com/grt1st/sshjumper/blob/master/README_EN.md)
 
-## 快速开始
+## Quickstart
 
-使用 `docker` 启动一个 ssh 服务器作为我们需要跳转的机器：
+Use `docker` to create a ssh server which we will connect to it use `SSH Jumper` later.
 ```commandline
 docker run -d \
   --name=sshjumer-slave \
@@ -27,7 +27,7 @@ docker run -d \
   lscr.io/linuxserver/openssh-server
 ```
 
-如果 docker 启动成功，我们可以这样连接到实例上：
+Then we could connect to the docker instance by ssh if it's success.
 ```commandline
 > ssh -p 2222 username@127.0.0.1
 The authenticity of host '[127.0.0.1]:2222 ([127.0.0.1]:2222)' can't be established.
@@ -44,7 +44,7 @@ logout
 Connection to 127.0.0.1 closed.
 ```
 
-之后我们在本地生成公私钥，用于 ssh 的认证：
+Then we generate a key pair to use as ssh authorization：
 ```commandline
 ssh-keygen -t dsa
 Generating public/private dsa key pair.
@@ -69,7 +69,7 @@ The key's randomart image is:
 +----[SHA256]-----+
 ```
 
-之后我们下载仓库到本地，修改文件：
+Then we download the code repository, and edit file.
 ```commandline
 > vim conf/auth.go
 
@@ -84,12 +84,12 @@ const (
 )
 ```
 
-现在启动服务：
+Now let's start the service.
 ```commandline
 > go run server.go
 ```
 
-新开一个命令行，通过 ssh 连接到服务上（密码为bar）：
+Create a new terminal, and connect to ssh jumper by ssh. Password is "bar".
 ```commandline
 ～ ssh foo@127.0.0.1 -p 2200
 foo@127.0.0.1's password:
@@ -125,40 +125,40 @@ logout
 Connection to 127.0.0.1 closed.
 ```
 
-## 使用文档
+## Usage
 
-### 配置
+### Config
 
-配置项目集中在 `conf/auth.go` 中：
+The configuration is in `conf/auth.go`.
 
 ```go
 var (
-    sshUsername = "foo"      // 连接到 ssh jumper 的用户名
-    sshPassword = "bar"      // 连接到 ssh jumper 的密码
-    username    = "username" // 通过 ssh jumper 中转的 ssh 账号用户名
-    password    = "password" // 通过 ssh jumper 中转的 ssh 账号密码
-    host        = "host"     // 通过 ssh jumper 中转的远端 ssh 的地址
+    sshUsername = "foo"      // ssh jumper username
+    sshPassword = "bar"      // ssh jumper password
+    username    = "username" // ssh slave username
+    password    = "password" // ssh slave password
+    host        = "host"     // ssh slave host
 )
 
 const (
-    ServerAddr     = "127.0.0.1:2200"   // ssh jumper 的监听地址
-    PrivateKeyPath = "private_key_path" // ssh jumper 的 ssh private key 
+    ServerAddr     = "127.0.0.1:2200"   // ssh jumper host
+    PrivateKeyPath = "private_key_path" // ssh jumper private key
 )
 
-// 连接到 ssh jumper 的账号认证方法
+// authorization to ssh jumper
 func ConnectSSHPassword(c ssh.ConnMetadata, pass []byte) (*ssh.Permissions, error)
 
-// 连接到 ssh jumper 的公钥认证方法
+// authorization to ssh jumper
 func ConnectSSHPublicKey(c ssh.ConnMetadata, pubKey ssh.PublicKey) (*ssh.Permissions, error)
 
-// 获取连接远端 ssh 的信息，如果没权限返回错误
+// authorization to ssh jumper slave
 func GetRemoteSSH(command utils.Command, serverConn *ssh.ServerConn) (string, *ssh.ClientConfig, error)
 
 ```
 
-### 命令
+### Command
 
-连接到 ssh jumper 后，支持如下命令
+The commands `SSH Jumper` support is in below:
 
 ```commandline
 > help
@@ -170,7 +170,6 @@ Commands:
     exit    Logout
 ```
 
-## 变更记录
+## Changelog
 
-- 2022.01.29 初始版本。
-
+- 2022.01.29 Initial Version.
