@@ -32,7 +32,7 @@ func HandlePty(channel ssh.Channel, serverConn *ssh.ServerConn) {
 		command := utils.NewCommand(line)
 		switch command.Name {
 		case "ssh":
-			host, sshConfig, err := conf.GetRemoteSSH(command, serverConn)
+			host, sshConfig, err := conf.GetRemoteSSH("", true)
 			if err != nil {
 				_, _ = term.Write(utils.LogSprintf(utils.WordsSSHNotAvailable, err).Bytes())
 				continue
@@ -40,7 +40,11 @@ func HandlePty(channel ssh.Channel, serverConn *ssh.ServerConn) {
 			_, _ = term.Write(utils.LogSprintf(utils.WordsSSHInfo, host).Bytes())
 			_, _ = term.Write(utils.LogSprintf(utils.WordsSSHLoading).Bytes())
 			wrapper := utils.NewTermWrapper(channel)
-			session, _ := utils.CreateSSHSession(wrapper, host, sshConfig)
+			session, err := utils.CreateSSHSession(wrapper, host, sshConfig)
+			if err != nil {
+				// todo: log error
+				panic(err)
+			}
 			_, _ = term.Write([]byte(utils.ClearPreviousLine))
 			err = session.Wait()
 			_ = session.Close()
@@ -56,7 +60,7 @@ func HandlePty(channel ssh.Channel, serverConn *ssh.ServerConn) {
 			return
 		case "help":
 			_, _ = term.Write([]byte(utils.GetHelpDoc(map[string]string{
-				"ssh": "ssh to remote host.",
+				"ssh":  "ssh to remote host.",
 				"exec": "execute command.",
 				"exit": "logout",
 			}, utils.CRLF)))

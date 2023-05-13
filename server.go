@@ -41,8 +41,9 @@ func Listen(addr string) {
 func CreatePortalSession(conn net.Conn) {
 
 	// server config
+	conf.InitSSHPublicKey()
 	config := ssh.ServerConfig{
-		PasswordCallback: conf.ConnectSSHPassword,
+		PasswordCallback:  conf.ConnectSSHPassword,
 		PublicKeyCallback: conf.ConnectSSHPublicKey,
 	}
 
@@ -60,7 +61,7 @@ func CreatePortalSession(conn net.Conn) {
 	// 创建
 	serverConn, chans, reqs, err := ssh.NewServerConn(conn, &config)
 	if err != nil {
-		log.Fatalf("create sever conn failed: %v\n", err)
+		log.Printf("create sever conn failed: %v\n", err)
 	} else {
 		log.Printf("create server conn from %s\n", serverConn.RemoteAddr())
 	}

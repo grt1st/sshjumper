@@ -1,40 +1,73 @@
 package conf
 
 import (
+	"encoding/hex"
 	"fmt"
+	"github.com/pkg/errors"
+	"io/ioutil"
 	"net"
 	"time"
 
+	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/crypto/ssh"
-
-	"github.com/grt1st/sshjumper/utils"
 )
 
 var (
-	sshUsername = "foo"      // ssh jumper username
-	sshPassword = "bar"      // ssh jumper password
-	username    = "username" // ssh slave username
-	password    = "password" // ssh slave password
-	host        = "host"     // ssh slave host
+	// username:password, password encrypted by bcrypt
+	jumperUsers = map[string]string{
+		"foo": "243261243130246d3058636f30592e41722e70306e2e586c6137566975535066686b324d784e596273506e554b6f485252472e527535455843426d2e",
+	}
+	// username:public_key_path
+	jumpKeys = map[string]string{
+		"foo": "/Users/grt1st/.ssh/gogo.pub",
+	}
+	// ssh-machine info
+	jumpMachines = map[string][]string{
+		"127.0.0.1:2222": {
+			"username", "password",
+		},
+	}
 )
 
 const (
-	ServerAddr     = "127.0.0.1:2200"   // ssh jumper host
-	PrivateKeyPath = "private_key_path" // ssh jumper private key
+	ServerAddr     = "127.0.0.1:2200"          // ssh jumper host
+	PrivateKeyPath = "/Users/grt1st/.ssh/gogo" // ssh jumper private key
 )
+
+var authorizedKeysMap map[string]string
 
 // ConnectSSHPassword authorization to ssh jumper
 func ConnectSSHPassword(c ssh.ConnMetadata, pass []byte) (*ssh.Permissions, error) {
-	if c.User() == sshUsername && string(pass) == sshPassword {
-		return nil, nil
+	password, ok := jumperUsers[c.User()]
+	if ok {
+		comparePassword, _ := hex.DecodeString(password)
+		result := bcrypt.CompareHashAndPassword(comparePassword, pass)
+		if result == nil {
+			return nil, nil
+		}
 	}
 	return nil, fmt.Errorf("password rejected for %q", c.User())
 }
 
+func InitSSHPublicKey() {
+	authorizedKeysMap = make(map[string]string)
+
+	for u, publicKeyPath := range jumpKeys {
+		keyBytes, err := ioutil.ReadFile(publicKeyPath)
+		if err != nil {
+			continue
+		}
+		pubKey, _, _, _, err := ssh.ParseAuthorizedKey(keyBytes)
+		if err != nil {
+			continue
+		}
+		authorizedKeysMap[string(pubKey.Marshal())] = u
+	}
+}
+
 // ConnectSSHPublicKey authorization to ssh jumper
 func ConnectSSHPublicKey(c ssh.ConnMetadata, pubKey ssh.PublicKey) (*ssh.Permissions, error) {
-	authorizedKeysMap := map[string]bool{}
-	if authorizedKeysMap[string(pubKey.Marshal())] {
+	if authorizedKeysMap[string(pubKey.Marshal())] == c.User() {
 		return &ssh.Permissions{
 			Extensions: map[string]string{
 				"pubkey-fp": ssh.FingerprintSHA256(pubKey),
@@ -45,12 +78,31 @@ func ConnectSSHPublicKey(c ssh.ConnMetadata, pubKey ssh.PublicKey) (*ssh.Permiss
 }
 
 // GetRemoteSSH authorization to ssh jumper slave
-func GetRemoteSSH(command utils.Command, serverConn *ssh.ServerConn) (string, *ssh.ClientConfig, error) {
+func GetRemoteSSH(host string, defaultChoice bool) (string, *ssh.ClientConfig, error) {
+	var hostInfo []string
+	if defaultChoice {
+		if len(jumpMachines) == 0 {
+			return "", nil, errors.New("there are no machines to use")
+		}
+		for _, v := range jumpMachines {
+			hostInfo = v
+			break
+		}
+	} else {
+		var ok bool
+		hostInfo, ok = jumpMachines[host]
+		if !ok {
+			return "", nil, errors.New("machine not found")
+		}
+	}
+	if len(hostInfo) < 2 {
+		return "", nil, errors.New("host info not correct")
+	}
 	// do something...
 	sshConfig := &ssh.ClientConfig{
-		User: username,
+		User: hostInfo[0],
 		Auth: []ssh.AuthMethod{
-			ssh.Password(password), // todo: 支持证书
+			ssh.Password(hostInfo[1]), // todo: 支持证书
 		},
 		Timeout: 30 * time.Second,
 		HostKeyCallback: func(hostname string, remote net.Addr, key ssh.PublicKey) error {
