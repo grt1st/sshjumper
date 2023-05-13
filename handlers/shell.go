@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"log"
 	"os/exec"
 	"strings"
 
@@ -32,7 +33,14 @@ func HandlePty(channel ssh.Channel, serverConn *ssh.ServerConn) {
 		command := utils.NewCommand(line)
 		switch command.Name {
 		case "ssh":
-			host, sshConfig, err := conf.GetRemoteSSH("", true)
+			var defaultChoice bool
+			var host string
+			if len(command.Peaces) == 0 {
+				defaultChoice = true
+			} else {
+				host = command.Peaces[0]
+			}
+			host, sshConfig, err := conf.GetRemoteSSH(host, defaultChoice)
 			if err != nil {
 				_, _ = term.Write(utils.LogSprintf(utils.WordsSSHNotAvailable, err).Bytes())
 				continue
@@ -42,8 +50,9 @@ func HandlePty(channel ssh.Channel, serverConn *ssh.ServerConn) {
 			wrapper := utils.NewTermWrapper(channel)
 			session, err := utils.CreateSSHSession(wrapper, host, sshConfig)
 			if err != nil {
-				// todo: log error
-				panic(err)
+				log.Printf("connect to server failed: %v", err)
+				_, _ = term.Write(utils.LogSprintf(utils.WordsCommandError, err.Error()).Bytes())
+				continue
 			}
 			_, _ = term.Write([]byte(utils.ClearPreviousLine))
 			err = session.Wait()

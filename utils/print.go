@@ -25,6 +25,7 @@ const (
 	WordsInfo            = "\x1b[33;40m Welcome %s. %s \x1b[0m" + CRLF
 	WordsDone            = "\x1b[33;40m Goodbye. Good luck. \x1b[0m" + CRLF
 	WordsNotFound        = "Command not found: %s" + CRLF
+	WordsCommandError    = "Command exec wrong: %s" + CRLF
 	WordsNotSupport      = "Sorry, command not support now: %s" + CRLF
 	WordsSSHNotAvailable = "SSH not available: %s" + CRLF
 	WordsSSHInfo         = "Remote addr is %s. " + CRLF + Delimiter + CRLF

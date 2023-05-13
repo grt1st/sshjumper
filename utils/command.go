@@ -5,9 +5,11 @@ import "strings"
 type Command struct {
 	Name   string            // command
 	Params map[string]string // args
+	Peaces []string
 }
 
 func NewCommand(input string) (c Command) {
+	input = strings.TrimSpace(input)
 	parts := strings.Split(input, " ")
 	for k, v := range parts {
 		if k == 0 {
@@ -30,6 +32,10 @@ func NewCommand(input string) (c Command) {
 				value = parts[k+1]
 			}
 			c.Params[strings.TrimPrefix(v, "-")] = value
+		} else {
+			if v != "" {
+				c.Peaces = append(c.Peaces, v)
+			}
 		}
 	}
 	return

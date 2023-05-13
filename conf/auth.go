@@ -84,7 +84,8 @@ func GetRemoteSSH(host string, defaultChoice bool) (string, *ssh.ClientConfig, e
 		if len(jumpMachines) == 0 {
 			return "", nil, errors.New("there are no machines to use")
 		}
-		for _, v := range jumpMachines {
+		for k, v := range jumpMachines {
+			host = k
 			hostInfo = v
 			break
 		}
